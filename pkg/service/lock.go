@@ -22,9 +22,9 @@ type lockService struct {
 	lockRecordRepo repository.LockRecordRepository
 }
 
-func NewLockService() LockService {
+func NewLockService(repo repository.LockRecordRepository) LockService {
 	return &lockService{
-		lockRecordRepo: repository.NewLockRecordRepository(),
+		lockRecordRepo: repo,
 	}
 }
 

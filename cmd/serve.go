@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/liuzheran/lockInRaft/pkg/http/api"
+	"github.com/liuzheran/lockInRaft/pkg/repository"
+	"github.com/liuzheran/lockInRaft/pkg/service"
 	"github.com/liuzheran/lockInRaft/pkg/setting"
 	"github.com/spf13/cobra"
 )
@@ -29,13 +31,13 @@ func run() {
 	fmt.Println("从配置文件读取的结果：", db)
 
 	// 一系列初始化配置（且顺序是从底到高？）
-	// repo := repository.NewLockRecordRepository(db)
-	// service := service.NewLockService(repo)
+	repo := repository.NewLockRecordRepository()
+	service := service.NewLockService(repo)
 
 	// TODO 启动 gin 服务
 	ginEngine := gin.Default()
 	ginEngine.GET("/api/v1/list", func(c *gin.Context) {
-		api.List(c)
+		api.List(c, service)
 	})
 	// ginEngine.POST('/api/v1/lock')
 	// ginEngine.POST('/api/v1/release')
