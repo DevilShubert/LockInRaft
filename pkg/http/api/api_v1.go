@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/liuzheran/lockInRaft/pkg/entity"
 	"github.com/liuzheran/lockInRaft/pkg/service"
 )
 
@@ -11,8 +12,20 @@ import (
 func List(c *gin.Context, service service.LockService) {
 	// TODO 访问数据库查询数据
 	fmt.Println("执行List API")
-	data := []string{"item1", "item2", "item3"} // 示例数据
-	// TODO 访问service层的 LockService.List() 方法
+
+	lockRecords, err := service.ListLockRecords()
+	if err != nil {
+		c.JSON(500, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
+	}
+	data := []entity.LockRecord{}
+	for _, lockRecord := range lockRecords {
+		//  TODO 打印对象
+		data = append(data, lockRecord)
+	}
+
 	c.JSON(200, gin.H{
 		"status": "success",
 		"data":   data,
