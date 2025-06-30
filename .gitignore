@@ -1,2 +1,4 @@
 vendor/
 serve
+go.sum
+go.mod
