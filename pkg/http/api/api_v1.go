@@ -20,7 +20,7 @@ func List(c *gin.Context, service service.LockService) {
 			"message": err.Error(),
 		})
 	}
-	data := []entity.LockRecord{}
+	data := []*entity.LockRecord{}
 	for _, lockRecord := range lockRecords {
 		//  TODO 打印对象
 		data = append(data, lockRecord)
