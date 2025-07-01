@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/liuzheran/lockInRaft/pkg/entity"
 	"github.com/liuzheran/lockInRaft/pkg/repository"
 )
@@ -14,7 +16,7 @@ service层的lock.go文件 主要负责“最上层的”逻辑交互，在这�
 
 // 接口
 type LockService interface {
-	ListLockRecords() ([]*entity.LockRecord, error)
+	ListLockRecords(ctx context.Context) ([]*entity.LockRecord, error)
 }
 
 // 类（结构体）
@@ -28,6 +30,6 @@ func NewLockService(repo repository.LockRecordRepository) LockService {
 	}
 }
 
-func (s *lockService) ListLockRecords() ([]*entity.LockRecord, error) {
-	return s.lockRecordRepo.List()
+func (s *lockService) ListLockRecords(ctx context.Context) ([]*entity.LockRecord, error) {
+	return s.lockRecordRepo.List(ctx)
 }

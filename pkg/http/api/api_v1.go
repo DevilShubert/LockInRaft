@@ -13,7 +13,7 @@ func List(c *gin.Context, service service.LockService) {
 	// TODO 访问数据库查询数据
 	fmt.Println("执行List API")
 
-	lockRecords, err := service.ListLockRecords()
+	lockRecords, err := service.ListLockRecords(c.Request.Context())
 	if err != nil {
 		c.JSON(500, gin.H{
 			"status":  "error",
