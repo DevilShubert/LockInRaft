@@ -41,6 +41,9 @@ func run() {
 	// api/v1
 	v1 := ginEngine.Group("/api/v1")
 	v1.GET("/list", lockApi.List)
+	v1.POST("/acquire", lockApi.Acquire)
+	v1.POST("/release", lockApi.Release)
+	v1.POST("/keepalive", lockApi.KeepAlive)
 
 	ginEngine.Run()
 }
