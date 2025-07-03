@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/liuzheran/lockInRaft/pkg/http/api"
+	"github.com/liuzheran/lockInRaft/pkg/http/rest"
 	"github.com/liuzheran/lockInRaft/pkg/repository"
 	"github.com/liuzheran/lockInRaft/pkg/service"
 	"github.com/liuzheran/lockInRaft/pkg/setting"
@@ -33,15 +33,15 @@ func run() {
 	// 一系列初始化配置（且顺序是从底到高？）
 	repo := repository.NewLockRecordRepository()
 	service := service.NewLockService(repo)
+	lockApi := rest.NewLockApi(service)
 
 	// TODO 启动 gin 服务
 	ginEngine := gin.Default()
-	ginEngine.GET("/api/v1/list", func(c *gin.Context) {
-		api.List(c, service)
-	})
-	// ginEngine.POST('/api/v1/lock')
-	// ginEngine.POST('/api/v1/release')
-	// ginEngine.GET('/api/v1/renew')
+
+	// api/v1
+	v1 := ginEngine.Group("/api/v1")
+	v1.GET("/list", lockApi.List)
+
 	ginEngine.Run()
 }
 
