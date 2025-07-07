@@ -8,3 +8,12 @@ type DBConfig struct {
 	Password string
 	DbName   string
 }
+
+type RaftConfig struct {
+	BootStrap   bool
+	HttpAddr    string
+	RaftAddr    string
+	RaftId      string
+	RaftCluster string
+	RaftDir     string
+}

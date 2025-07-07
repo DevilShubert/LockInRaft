@@ -13,3 +13,15 @@ func ProviderDBConfig() *DBConfig {
 	}
 	return dbconfig
 }
+
+func ProviderRaftConfig() *RaftConfig {
+	raftConfig := &RaftConfig{
+		BootStrap:   viper.GetBool("raft.bootstrap"),
+		HttpAddr:    viper.GetString("raft.http_addr"),
+		RaftAddr:    viper.GetString("raft.raft_addr"),
+		RaftId:      viper.GetString("raft.raft_id"),
+		RaftCluster: viper.GetString("raft.raft_cluster"),
+		RaftDir:     viper.GetString("raft.raft_dir"),
+	}
+	return raftConfig
+}
