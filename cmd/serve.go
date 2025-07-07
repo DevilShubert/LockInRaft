@@ -58,14 +58,14 @@ func run() {
 	go func() {
 		for leader := range raft.LeaderCh() {
 			if leader {
-				atomic.StoreInt64(&(raftService.IsLeader), 1)
+				atomic.StoreInt64(raftService.IsLeaderPtr(), 1)
 			} else {
-				atomic.StoreInt64(&(raftService.IsLeader), 0)
+				atomic.StoreInt64(raftService.IsLeaderPtr(), 0)
 			}
 		}
 	}()
 
-	// TODO 启动 gin 服务
+	// TODO 启动 gin 服务(改写使用HTTP.SERVER启动方式)
 	ginEngine := gin.Default()
 
 	// api/v1

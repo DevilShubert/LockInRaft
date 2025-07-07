@@ -12,7 +12,10 @@ import (
 
 type RaftService interface {
 	BootStrap()
+	GetRaft() *raft.Raft
+	IsLeaderPtr() *int64
 	AddVoter(id raft.ServerID, address raft.ServerAddress, prevIndex uint64, timeout time.Duration) error
+	RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error
 }
 
 type raftService struct {
@@ -22,7 +25,7 @@ type raftService struct {
 	RaftConfig *setting.RaftConfig
 }
 
-func NewRaftService(raft *raft.Raft, myFsm *myraft.MyEmptyFsm, raftConfig *setting.RaftConfig) *raftService {
+func NewRaftService(raft *raft.Raft, myFsm *myraft.MyEmptyFsm, raftConfig *setting.RaftConfig) RaftService {
 	return &raftService{
 		IsLeader:   0,
 		Raft:       raft,
@@ -70,4 +73,18 @@ func (r *raftService) AddVoter(id raft.ServerID, address raft.ServerAddress, pre
 		return err
 	}
 	return nil
+}
+
+func (r *raftService) GetRaft() *raft.Raft {
+	return r.Raft
+}
+
+func (r *raftService) RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error {
+	// TODO 删除节点
+	return nil
+}
+
+func (r *raftService) IsLeaderPtr() *int64 {
+	// 返回指针，方便在协程中修改
+	return &r.IsLeader
 }
