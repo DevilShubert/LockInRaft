@@ -47,7 +47,7 @@ func (l *lockApi) KeepAlive(c *gin.Context) {}
 
 // 添加节点
 func (l *lockApi) AddNode(c *gin.Context) {
-	var param schema.AddNodeParam
+	var param schema.NodeParam
 	if err := c.ShouldBindJSON(&param); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -62,10 +62,37 @@ func (l *lockApi) AddNode(c *gin.Context) {
 }
 
 // 删除节点
-func (l *lockApi) RemoveNode(c *gin.Context) {}
+func (l *lockApi) RemoveNode(c *gin.Context) {
+	var param schema.NodeParam
+	if err := c.ShouldBindJSON(&param); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	fmt.Printf("删除节点: %s, %s\n", param.Id, param.PeerAddr)
+	err := l.raftService.RemoveServer(raft.ServerID(param.Id), 0, 0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Node removed success"})
+}
 
 // 获取集群信息
-func (l *lockApi) GetClusterInfo(c *gin.Context) {}
+func (l *lockApi) GetClusterInfo(c *gin.Context) {
+	nodes, err := l.raftService.GetRaftClusterInfo()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, nodes)
+}
 
 // 获取Leader
-func (l *lockApi) GetLeader(c *gin.Context) {}
+func (l *lockApi) GetLeader(c *gin.Context) {
+	leader, err := l.raftService.GetRaftLeader()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, leader)
+}

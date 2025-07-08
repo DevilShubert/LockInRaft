@@ -16,12 +16,22 @@ func ProviderDBConfig() *DBConfig {
 
 func ProviderRaftConfig() *RaftConfig {
 	raftConfig := &RaftConfig{
-		BootStrap:   viper.GetBool("raft.bootstrap"),
-		HttpAddr:    viper.GetString("raft.http_addr"),
-		RaftAddr:    viper.GetString("raft.raft_addr"),
-		RaftId:      viper.GetString("raft.raft_id"),
-		RaftCluster: viper.GetString("raft.raft_cluster"),
-		RaftDir:     viper.GetString("raft.raft_dir"),
+		BootStrap:   viper.GetBool("raft.bootStrap"),
+		HttpAddr:    viper.GetString("raft.httpAddr"),
+		RaftAddr:    viper.GetString("raft.raftAddr"),
+		RaftId:      viper.GetString("raft.raftId"),
+		RaftCluster: viper.GetString("raft.raftCluster"),
+		RaftDir:     viper.GetString("raft.raftDir"),
 	}
 	return raftConfig
+}
+
+func ProviderHttpConfig() *HttpConfig {
+	httpConfig := &HttpConfig{
+		Port:           viper.GetInt("http.port"),
+		ReadTimeout:    viper.GetInt("http.readTimeout"),
+		WriteTimeout:   viper.GetInt("http.writeTimeout"),
+		MaxHeaderBytes: viper.GetInt("http.maxHeaderBytes"),
+	}
+	return httpConfig
 }

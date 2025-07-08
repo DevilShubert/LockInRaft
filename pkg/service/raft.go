@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/raft"
 	myraft "github.com/liuzheran/lockInRaft/pkg/raft"
+	"github.com/liuzheran/lockInRaft/pkg/schema"
 	"github.com/liuzheran/lockInRaft/pkg/setting"
 )
 
@@ -16,6 +17,8 @@ type RaftService interface {
 	IsLeaderPtr() *int64
 	AddVoter(id raft.ServerID, address raft.ServerAddress, prevIndex uint64, timeout time.Duration) error
 	RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error
+	GetRaftClusterInfo() ([]schema.RaftPeer, error)
+	GetRaftLeader() (schema.RaftPeer, error)
 }
 
 type raftService struct {
@@ -80,11 +83,50 @@ func (r *raftService) GetRaft() *raft.Raft {
 }
 
 func (r *raftService) RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error {
-	// TODO 删除节点
+	future := r.Raft.RemoveServer(id, prevIndex, timeout)
+	if err := future.Error(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (r *raftService) IsLeaderPtr() *int64 {
 	// 返回指针，方便在协程中修改
 	return &r.IsLeader
+}
+
+func (r *raftService) GetRaftClusterInfo() ([]schema.RaftPeer, error) {
+	future := r.Raft.GetConfiguration()
+	if err := future.Error(); err != nil {
+		fmt.Sprintf("failed to get raftconfiguration: %s", err)
+		return nil, err
+	}
+
+	var nodes []schema.RaftPeer
+	for _, server := range future.Configuration().Servers {
+		s := strings.Split(string(server.Address), ":")
+		if len(s) >= 2 {
+			nodes = append(nodes, schema.RaftPeer{Ip: s[0], Port: s[1]}) // 将ip和port添加到nodes切片中
+		}
+	}
+
+	addr, _ := r.Raft.LeaderWithID()
+	addrStr := string(addr)
+	// TODO 这里可能发生Leader切换
+	leader := strings.Split(addrStr, ":")
+	for i, node := range nodes {
+		if node.Ip == leader[0] && node.Port == leader[1] {
+			nodes[i].Role = "leader" // 标记为领导者
+		} else {
+			nodes[i].Role = "follower" // 标记为追随者
+		}
+	}
+	return nodes, nil
+}
+
+func (r *raftService) GetRaftLeader() (schema.RaftPeer, error) {
+	addr, _ := r.Raft.LeaderWithID()
+	addrStr := string(addr)
+	leader := strings.Split(addrStr, ":")
+	return schema.RaftPeer{Ip: leader[0], Port: leader[1], Role: "leader"}, nil
 }

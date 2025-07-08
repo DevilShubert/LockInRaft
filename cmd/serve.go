@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 	"sync/atomic"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/liuzheran/lockInRaft/pkg/http/rest"
@@ -31,8 +34,10 @@ func run() {
 	// 使用viper 加载配置
 	dbConfig := setting.ProviderDBConfig()
 	raftConfig := setting.ProviderRaftConfig()
-	fmt.Println("从配置文件读取的结果：", dbConfig)
-	fmt.Println("从配置文件读取的结果：", raftConfig)
+	httpConfig := setting.ProviderHttpConfig()
+	fmt.Println("dbConfig 从配置文件读取的结果：", dbConfig)
+	fmt.Println("raftConfig 从配置文件读取的结果：", raftConfig)
+	fmt.Println("httpConfig 从配置文件读取的结果：", httpConfig)
 
 	// 初始化配置
 	repo := repository.NewLockRecordRepository()
@@ -40,6 +45,9 @@ func run() {
 
 	// 初始化raft配置并启动raft节点
 	raftConfig.RaftDir = raftConfig.RaftDir + "_" + raftConfig.RaftId
+	fmt.Println("raftConfig.RaftDir: ", raftConfig.RaftDir)
+	os.MkdirAll(raftConfig.RaftDir, 0700)
+
 	raft, myFsm, err := myraft.NewRaft(raftConfig.RaftAddr, raftConfig.RaftId, raftConfig.RaftDir)
 	if err != nil {
 		fmt.Printf("Failed to initialize raft: %v", err)
@@ -79,10 +87,18 @@ func run() {
 	lockEndopint := ginEngine.Group("/api/lock")
 	lockEndopint.POST("/addNode", lockApi.AddNode)
 	lockEndopint.POST("/removeNode", lockApi.RemoveNode)
-	lockEndopint.POST("/getClusterInfo", lockApi.GetClusterInfo)
-	lockEndopint.POST("/getLeader", lockApi.GetLeader)
+	lockEndopint.GET("/getClusterInfo", lockApi.GetClusterInfo)
+	lockEndopint.GET("/getLeader", lockApi.GetLeader)
 
-	ginEngine.Run()
+	s := &http.Server{
+		// Addr需要写成 :port 格式
+		Addr:           fmt.Sprintf(":%d", httpConfig.Port),
+		Handler:        ginEngine,
+		ReadTimeout:    time.Duration(httpConfig.ReadTimeout) * time.Second,
+		WriteTimeout:   time.Duration(httpConfig.WriteTimeout) * time.Second,
+		MaxHeaderBytes: httpConfig.MaxHeaderBytes,
+	}
+	s.ListenAndServe()
 }
 
 func init() {

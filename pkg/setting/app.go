@@ -17,3 +17,10 @@ type RaftConfig struct {
 	RaftCluster string
 	RaftDir     string
 }
+
+type HttpConfig struct {
+	Port           int
+	ReadTimeout    int
+	WriteTimeout   int
+	MaxHeaderBytes int
+}

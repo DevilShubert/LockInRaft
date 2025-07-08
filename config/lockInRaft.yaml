@@ -11,3 +11,8 @@ raft:
   raftId: "1"
   raftCluster: "1/127.0.0.1:7000"
   raftDir: "node/raft"
+http:
+  port: 7070
+  readTimeout: 10
+  writeTimeout: 10
+  maxHeaderBytes: 1024
