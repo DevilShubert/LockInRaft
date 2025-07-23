@@ -3,7 +3,7 @@ db:
   port: 3306              
   user: "root"            
   password: "123456xx"    
-  dbname: "lockinraft"
+  dbname: "lock_in_raft"
 raft:
   bootStrap: true
   httpAddr: "127.0.0.1:7001"

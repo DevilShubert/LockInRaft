@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/liuzheran/lockInRaft/pkg/http/rest"
+	"github.com/liuzheran/lockInRaft/pkg/infra/db"
 	myraft "github.com/liuzheran/lockInRaft/pkg/raft"
 	"github.com/liuzheran/lockInRaft/pkg/repository"
 	"github.com/liuzheran/lockInRaft/pkg/service"
@@ -31,6 +33,7 @@ to quickly create a Cobra application.`,
 }
 
 func run() {
+	ctx := context.Background()
 	// 使用viper 加载配置
 	dbConfig := setting.ProviderDBConfig()
 	raftConfig := setting.ProviderRaftConfig()
@@ -39,9 +42,13 @@ func run() {
 	fmt.Println("raftConfig 从配置文件读取的结果：", raftConfig)
 	fmt.Println("httpConfig 从配置文件读取的结果：", httpConfig)
 
+	db, err := db.ProvideLockDB(dbConfig)
+	if err != nil {
+		panic("初始化数据库时有问题")
+	}
+
 	// 初始化配置
-	repo := repository.NewLockRecordRepository()
-	lockService := service.NewLockService(repo)
+	lockRecordRepo := repository.NewLockRecordRepository()
 
 	// 初始化raft配置并启动raft节点
 	raftConfig.RaftDir = raftConfig.RaftDir + "_" + raftConfig.RaftId
@@ -54,21 +61,23 @@ func run() {
 		return
 	}
 
-	raftService := service.NewRaftService(raft, myFsm, raftConfig)
+	raftManager := service.NewRaftManager(raft, myFsm, raftConfig)
 	if raftConfig.BootStrap {
-		raftService.BootStrap()
+		raftManager.BootStrap()
 	}
 
+	// TODO 注入CacheManager
+	lockService := service.NewLockService(db, lockRecordRepo, nil, raftManager)
 	// 初始化api配置
-	lockApi := rest.NewLockApi(lockService, raftService)
+	lockApi := rest.NewLockApi(lockService)
 
 	// 启动协程，监听来自Leader的变更，并使用原子修改isLeader的标志位
 	go func() {
 		for leader := range raft.LeaderCh() {
 			if leader {
-				atomic.StoreInt64(raftService.IsLeaderPtr(), 1)
+				atomic.StoreInt64(lockService.RaftManager.IsLeaderPtr(), 1)
 			} else {
-				atomic.StoreInt64(raftService.IsLeaderPtr(), 0)
+				atomic.StoreInt64(lockService.RaftManager.IsLeaderPtr(), 0)
 			}
 		}
 	}()
@@ -82,6 +91,7 @@ func run() {
 	v1.POST("/acquire", lockApi.Acquire)
 	v1.POST("/release", lockApi.Release)
 	v1.POST("/keepalive", lockApi.KeepAlive)
+	v1.POST("/cache", lockApi.RebuildCache)
 
 	// api/lock
 	lockEndopint := ginEngine.Group("/api/lock")
@@ -99,6 +109,8 @@ func run() {
 		MaxHeaderBytes: httpConfig.MaxHeaderBytes,
 	}
 	s.ListenAndServe()
+
+	go lockService.Elect(ctx)
 }
 
 func init() {

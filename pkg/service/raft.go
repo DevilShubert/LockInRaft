@@ -11,25 +11,25 @@ import (
 	"github.com/liuzheran/lockInRaft/pkg/setting"
 )
 
-type RaftService interface {
-	BootStrap()
-	GetRaft() *raft.Raft
-	IsLeaderPtr() *int64
-	AddVoter(id raft.ServerID, address raft.ServerAddress, prevIndex uint64, timeout time.Duration) error
-	RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error
-	GetRaftClusterInfo() ([]schema.RaftPeer, error)
-	GetRaftLeader() (schema.RaftPeer, error)
-}
+// type RaftService interface {
+// 	BootStrap()
+// 	GetRaft() *raft.Raft
+// 	IsLeaderPtr() *int64
+// 	AddVoter(id raft.ServerID, address raft.ServerAddress, prevIndex uint64, timeout time.Duration) error
+// 	RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error
+// 	GetRaftClusterInfo() ([]schema.RaftPeer, error)
+// 	GetRaftLeader() (schema.RaftPeer, error)
+// }
 
-type raftService struct {
+type RaftManager struct {
 	IsLeader   int64
 	Raft       *raft.Raft
 	MyFsm      *myraft.MyEmptyFsm
 	RaftConfig *setting.RaftConfig
 }
 
-func NewRaftService(raft *raft.Raft, myFsm *myraft.MyEmptyFsm, raftConfig *setting.RaftConfig) RaftService {
-	return &raftService{
+func NewRaftManager(raft *raft.Raft, myFsm *myraft.MyEmptyFsm, raftConfig *setting.RaftConfig) *RaftManager {
+	return &RaftManager{
 		IsLeader:   0,
 		Raft:       raft,
 		MyFsm:      myFsm,
@@ -37,7 +37,7 @@ func NewRaftService(raft *raft.Raft, myFsm *myraft.MyEmptyFsm, raftConfig *setti
 	}
 }
 
-func (r *raftService) BootStrap() {
+func (r *RaftManager) BootStrap() {
 	// 获取集群配置（从stable中查找）
 	servers := r.Raft.GetConfiguration().Configuration().Servers
 
@@ -70,7 +70,7 @@ func (r *raftService) BootStrap() {
 	fmt.Println("集群启动成功")
 }
 
-func (r *raftService) AddVoter(id raft.ServerID, address raft.ServerAddress, prevIndex uint64, timeout time.Duration) error {
+func (r *RaftManager) AddVoter(id raft.ServerID, address raft.ServerAddress, prevIndex uint64, timeout time.Duration) error {
 	future := r.Raft.AddVoter(id, address, prevIndex, timeout)
 	if err := future.Error(); err != nil {
 		return err
@@ -78,11 +78,11 @@ func (r *raftService) AddVoter(id raft.ServerID, address raft.ServerAddress, pre
 	return nil
 }
 
-func (r *raftService) GetRaft() *raft.Raft {
+func (r *RaftManager) GetRaft() *raft.Raft {
 	return r.Raft
 }
 
-func (r *raftService) RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error {
+func (r *RaftManager) RemoveServer(id raft.ServerID, prevIndex uint64, timeout time.Duration) error {
 	future := r.Raft.RemoveServer(id, prevIndex, timeout)
 	if err := future.Error(); err != nil {
 		return err
@@ -90,12 +90,12 @@ func (r *raftService) RemoveServer(id raft.ServerID, prevIndex uint64, timeout t
 	return nil
 }
 
-func (r *raftService) IsLeaderPtr() *int64 {
+func (r *RaftManager) IsLeaderPtr() *int64 {
 	// 返回指针，方便在协程中修改
 	return &r.IsLeader
 }
 
-func (r *raftService) GetRaftClusterInfo() ([]schema.RaftPeer, error) {
+func (r *RaftManager) GetRaftClusterInfo() ([]schema.RaftPeer, error) {
 	future := r.Raft.GetConfiguration()
 	if err := future.Error(); err != nil {
 		fmt.Sprintf("failed to get raftconfiguration: %s", err)
@@ -124,7 +124,7 @@ func (r *raftService) GetRaftClusterInfo() ([]schema.RaftPeer, error) {
 	return nodes, nil
 }
 
-func (r *raftService) GetRaftLeader() (schema.RaftPeer, error) {
+func (r *RaftManager) GetRaftLeader() (schema.RaftPeer, error) {
 	addr, _ := r.Raft.LeaderWithID()
 	addrStr := string(addr)
 	leader := strings.Split(addrStr, ":")
