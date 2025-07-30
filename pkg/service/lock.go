@@ -52,9 +52,9 @@ func (l *LockService) LockAcquire(ctx context.Context) (*entity.LockRecord, erro
 	//  2.2 检查对应加锁内容是否合规（对应namespace.lock_resource的格式是否正确，以及namespace是否存在）
 	//  2.3 检查lock_uuid是否已经存在
 	// 3. 检查锁的互斥性
-	//  3.1 是否已经存在
-	//  3.2 对应锁类型是否互斥
-	//  3.3 锁是否达到最大并发度
+	//  3.1 对应资源的锁是否已经存在（不存在则直接加锁，存在则进行下面的判断）
+	//  3.2 对应锁类型是否互斥（互斥则加锁失败，不互斥则比较最大并发度）
+	//  3.3 锁是否达到最大并发度（达到则加锁失败，没达到则加上）
 	// 4. 对CacheManager添加全局Mutex锁（这里加锁是为了保证操作Cache和DB是原子）
 	// 5. CacheManager中添加锁记录
 	// 6. DB中添加锁记录

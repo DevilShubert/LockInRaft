@@ -49,6 +49,7 @@ func run() {
 
 	// 初始化Repo
 	lockRecordRepo := repository.NewLockRecordRepository()
+	lockTypeRepo := repository.NewLockTypeRepo()
 
 	// 初始化raft配置并启动raft节点
 	raftConfig.RaftDir = raftConfig.RaftDir + "_" + raftConfig.RaftId
@@ -67,7 +68,7 @@ func run() {
 		raftManager.BootStrap()
 	}
 	// 初始化CacheManager
-	cacheManager := service.NewCacheManager(db, lockRecordRepo)
+	cacheManager := service.NewCacheManager(db, lockRecordRepo, lockTypeRepo)
 	// 初始化众多service
 	lockService := service.NewLockService(cacheManager, raftManager)
 	// 初始化api配置

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ type CacheManager struct {
 	DB *sqlx.DB
 	// 众多Repo
 	lockRecordRepo *repository.LockRecordRepo
+	lockTypeRepo   *repository.LockTypeRepo
 	// 缓存实体
 	LockCache *LockCache
 	// Available 主要是在重建缓存时不可用
@@ -34,10 +36,12 @@ type CacheManager struct {
 
 func NewCacheManager(
 	db *sqlx.DB,
-	lockRecordRepo *repository.LockRecordRepo) *CacheManager {
+	lockRecordRepo *repository.LockRecordRepo,
+	lockTypeRepo *repository.LockTypeRepo) *CacheManager {
 	return &CacheManager{
 		DB:             db,
 		lockRecordRepo: lockRecordRepo,
+		lockTypeRepo:   lockTypeRepo,
 		LockCache:      &LockCache{},
 	}
 }
@@ -81,6 +85,16 @@ func (m *CacheManager) initLocks(ctx context.Context) error {
 }
 
 func (m *CacheManager) initLockTypes(ctx context.Context) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+
+	lockTypes, err := m.lockTypeRepo.List(ctxWithTimeout, m.DB)
+	if err != nil {
+		// ...
+	}
+	for _, lock_type := range lockTypes {
+		fmt.Println(lock_type)
+	}
 	return nil
 }
 
