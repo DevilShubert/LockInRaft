@@ -47,7 +47,7 @@ func run() {
 		panic("初始化数据库时有问题")
 	}
 
-	// 初始化配置
+	// 初始化Repo
 	lockRecordRepo := repository.NewLockRecordRepository()
 
 	// 初始化raft配置并启动raft节点
@@ -62,12 +62,14 @@ func run() {
 	}
 
 	raftManager := service.NewRaftManager(raft, myFsm, raftConfig)
+	// 如果设置为Leader且是项目第一次启动才需要BootStrap
 	if raftConfig.BootStrap {
 		raftManager.BootStrap()
 	}
-
-	// TODO 注入CacheManager
-	lockService := service.NewLockService(db, lockRecordRepo, nil, raftManager)
+	// 初始化CacheManager
+	cacheManager := service.NewCacheManager(db, lockRecordRepo)
+	// 初始化众多service
+	lockService := service.NewLockService(cacheManager, raftManager)
 	// 初始化api配置
 	lockApi := rest.NewLockApi(lockService)
 

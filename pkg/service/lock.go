@@ -7,9 +7,7 @@ import (
 	"sync/atomic"
 
 	raft "github.com/hashicorp/raft"
-	"github.com/jmoiron/sqlx"
 	"github.com/liuzheran/lockInRaft/pkg/entity"
-	"github.com/liuzheran/lockInRaft/pkg/repository"
 )
 
 /*
@@ -27,29 +25,23 @@ service层的lock.go文件 主要负责“最上层的”逻辑交互，在这�
 
 // 类（结构体）
 type LockService struct {
-	DB             *sqlx.DB
-	lockRecordRepo *repository.LockRecordRepo
-	CacheManager   *CacheManager
-	RaftManager    *RaftManager
-	mu             sync.Mutex
+	CacheManager *CacheManager
+	RaftManager  *RaftManager
+	mu           sync.Mutex
 }
 
 func NewLockService(
-	db *sqlx.DB,
-	lockRecordRepo *repository.LockRecordRepo,
 	cacheManager *CacheManager,
 	raftManager *RaftManager) *LockService {
 	return &LockService{
-		DB:             db,
-		lockRecordRepo: lockRecordRepo,
-		CacheManager:   cacheManager,
-		RaftManager:    raftManager,
-		mu:             sync.Mutex{},
+		CacheManager: cacheManager,
+		RaftManager:  raftManager,
+		mu:           sync.Mutex{},
 	}
 }
 
 func (l *LockService) ListLockRecords(ctx context.Context) ([]*entity.LockRecord, error) {
-	return l.lockRecordRepo.List(ctx, l.DB)
+	return l.CacheManager.lockRecordRepo.List(ctx, l.CacheManager.DB)
 }
 
 func (l *LockService) LockAcquire(ctx context.Context) (*entity.LockRecord, error) {
@@ -107,7 +99,7 @@ func (l *LockService) runLeader(ctx context.Context) {
 	// 1.重建缓存
 	err := l.CacheManager.RebuildCache(ctx)
 	if err != nil {
-		// ...
+		// TODO 清理缓存时报错
 	}
 
 	// 2.开启定时，定期清理超期的lock
